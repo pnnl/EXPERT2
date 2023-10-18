@@ -12,7 +12,7 @@ We introduce NuclearQA: a novel benchmark for evaluating large language models t
 
 We welcome use of our dataset for research and testing purposes. When you use it, please cite the work as follows:
 
-Acharya, A., Munikoti, S., Hellinger, A.C., Smith, S., Wagle, S., & Horawalavithana, S. (2023). NuclearQA: A Human-made Benchmark for Language Models for the Nuclear Domain. [BibTeX](about:blank) (*Link TBD*)
+Acharya, A., Munikoti, S., Hellinger, A., Smith, S., Wagle, S., & Horawalavithana, S. (2023). NuclearQA: A Human-Made Benchmark for Language Models for the Nuclear Domain. arXiv Preprint arXiv:2310. 10920.
 
 ## Dataset Details
 
