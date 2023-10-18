@@ -1,0 +1,100 @@
+What are the fundamental particles of an atom?
+How many protons and neutrons are inside a U-238 atom?
+What are the interaction types of photons with matter?
+What fundamental quarks make up a proton?
+What are the four fundamental forces?
+What two particles are emitted after a pair production absorption of a gamma-ray?
+List the types of radioactive decay.
+In radiation detection when using gas-filled detectors, there are five regions of the gas curve that describe the signal amplification versus the voltage applied to the detector. What are the 5 regions of that gas curve?
+Which radioactive decays conserve the mass number of an isotope?
+Which isotopes have been used to create atomic clocks?
+Which two isotopes are used in the majority of all neutron generators that are commercially available?
+What fundamental particle of an atom is positively charged?
+How many neutrons are inside a U-238 atom?
+How many neutrons and protons make up an alpha particle?
+What is the chemical symbol for Tungsten?
+Which photon interaction type does not end with the photon being absorbed?
+What is the product isotope when Fe-56 absorbs a neutron and emits a proton?
+What force do you need to initially overcome for a fusion reaction to occur?
+What is the mass of an electron?
+What term is used to describe the probability of interaction between two particles?
+How many joules are in one electron volt?
+What is the weakest fundamental force?
+What is the heaviest stable isotope?
+What isotope is most commonly used for radioactive dating?
+Which positively charged particle is emitted after a pair production interaction?
+What is the cutoff energy for a thermal neutron?
+What is the name of atoms that have the same atomic number but a different mass number?
+What is the name of atoms that have the same mass number, but different atomic numbers?
+How much U-235 is in a uranium nugget to consider it highly enriched?
+What role does water play inside a nuclear reactor?
+What is the difference between the fuel type for a pressurized water reactor and a molten salt reactor?
+Why are poison rods included in some nuclear reactor designs?
+What element is most commonly used as a poison in PWR designs?
+Describe the Q-value of a nuclear reaction.
+What happens inside the nucleus of an atom during beta decay?
+In radiation detection when using gas-filled detectors, there are five regions of the gas curve that describe the signal amplification versus the voltage applied to the detector. Which region of the gas curve cannot be used for radiation detection?
+What is the difference between phosphorescence and fluorescence?
+Prompt gamma-ray activation analysis is a measurement technique to determine the contents of a material. Does the material used for prompt gamma-ray analysis phosphoresce or fluoresce?
+Which element in a water molecule has the largest prompt gamma-ray from neutron activation?
+Which radioactive decay process conserves the mass number of an isotope and emits a negatively charged particle?
+What is the difference between fertile material and fissile material?
+The atomic weight and atomic number of an isotope are A and Z, respectively. Using A and Z, how do you calculate the number of neutrons in an isotope?
+What is the job of a moderator inside a nuclear reactor?
+Which isotope is used in the atomic clock that has been used to standardize the definition of one second?
+If an Iron-56 isotope were to interact with a neutron and emit two neutron, what isotope is the product?
+If you were to remove poison rods from a nuclear reactor, what would happen to the criticality?
+Why aren’t particle accelerators used to create chained fusion reactions?
+How does a deuterium-tritium fusion neutron generator work?
+Why do scientists study surrogate reactions?
+What is the probability that an Am-241 atom will decay in 30 days?
+Why is highly enriched uranium necessary for reactors that use water as a moderator?
+Why can’t a neutron be manipulated inside an electric field?
+How does a scintillator used for radiation detection work?
+What are the advantages of using nuclear breeder reactors?
+Why are light water reactors the most common type of nuclear reactor?
+How many Uranium-235 atoms per cubic centimeter are there in natural uranium?
+Why can a nuclear reactor that uses heavy-water as a moderator use a lower enrichment uranium?
+What makes germanium a great photon detector?
+Why can’t Geiger-Muller counters be used for spectral analysis?
+If a material has a half life of 100 years, how much original material is left after 400 years?
+Describe the fuel in a homogeneous reactor.
+How do cosmic neutrons end up in Earth’s atmosphere?
+What happens when an electron and positron interact with each other?
+Why is it hard to measure the energy spectrum of cosmic rays?
+Why can’t a fusion reactor be used to power a car?
+What does Avogadro's number explain?
+What is the atomic number density of U-235 in natural uranium?
+Imagine that you acquire a Cs-137 sample at time t=0 seconds. What is the percentage of atoms that have not decayed after 100 days?
+Which type of reactor does not use a moderator?
+Why can't neutrons be manipulated inside an electric or magnetic field?
+If neutrons cannot be manipulated, how are neutron beams created?
+What is the fundamental charge of an electron?
+What is the half-life of Carbon-14?
+What is the most accurate way to determine the composition of a material?
+What is the molecular weight of a heavy water?
+If you're standing 2 feet away from a radioactive source, how much further must from the radioactive source must you move in order to reduce the induced dose by 1/4?
+What is the minimum energy a photon must have to undergo pair production?
+If the cross section of a 1 MeV neutron in a piece of pure iron is 0.88 barns, what is the mean free path length of that neutron?
+How many protons, neutrons, and electrons does a calcium-40 isotope have if its charge state is 2+?
+How many valence electrons does a noble gas have?
+What is the mass of a proton?
+What is the percentage of heavy water in normal water?
+If an atom contains 35 protons, how many electrons does it need to have a neutral charge?
+You have a 1 gram iron foil and stick it in a monoenergetic neutron beam whose flux is 3e8 neutrons/cm2/s. If the iron-56 cross section of the desired reaction is 1.5 barns, how many iron-56 neutron interactions do you expect per second?
+Why isn't the EXFOR nuclear library more complete?
+How are neutrons created in facilities that are not reactors?
+What is the neutron separation energy of Iron-56?
+If the total neutron cross section of a material is 15 barns and the elastic scattering cross section is 13.5 barns, what is the nonelastic cross section?
+If the radioactive decay constant is equivalent to the natural log of 2 divided by the half life, what is the radioactive decay constant of Iron-55?
+If the total neutron macroscopic cross section of a material is 0.05 1/cm, what is the mean free path length?
+If the mean free path length of a neutron inside a material is 5 cm, what is its macroscopic cross section?
+What is the total absorption cross section of a material if the total cross section is 19 barns, the elastic scattering cross section is 10 barns, and the inelastic scattering cross section is 2 barns.
+If an iron-54 atom absorbed a neutron, how many neutrons will it have?
+If a chromium-52 atom undergoes an (n,alpha) reaction, how many protons and neutrons will it have?
+What is room temperature in Kelvin?
+Why is heavy water deemed "heavy"?
+What is the energy of the photon, in MeV, of the prompt gamma ray released during neutron interaction of hydrogen?
+What is the signature gamma ray energy, in keV, of the photon created during the (n,alpha) reaction with boron-10?
+Why is sodium so reactive with water?
+What is the velocity of a thermal neutron in m/s?

@@ -1,0 +1,1060 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+
+import copy
+import logging
+import math
+import time
+from functools import reduce
+from typing import List, Optional, Union
+
+import numpy as np
+import torch
+import torch.nn as nn
+
+from src import dist_utils
+from src.retrievers import EMBEDDINGS_DIM
+import pandas as pd
+import networkx as nx
+from torch_geometric.utils.convert import from_networkx
+# import dask.dataframe as dd
+
+import sys
+import linecache
+
+logger = logging.getLogger(__name__)
+IGNORE_INDEX: int = -100
+BERT_MAX_SEQ_LENGTH: int = 512
+
+
+def encode_passages(batch, tokenizer, max_length):
+    bsz = len(batch)
+    n = max([len(example) for example in batch])
+    batch = [example + [""] * (n - len(example)) for example in batch]
+    batch = reduce(lambda a, b: a + b, batch)
+    tokens = tokenizer(
+        batch,
+        padding="max_length",
+        max_length=max_length,
+        return_tensors="pt",
+        truncation=True,
+    )
+    tokens = {k: v.view(bsz, n, -1) for k, v in tokens.items()}
+    return tokens
+
+
+class Atlas(nn.Module):
+    def __init__(self, opt, reader, retriever, reader_tokenizer, retriever_tokenizer, retriever_graph):
+        super(Atlas, self).__init__()
+
+        self.reader = reader
+        self.retriever = retriever
+
+        self.retriever_graph = retriever_graph
+        self.reader_tokenizer = reader_tokenizer
+        self.retriever_tokenizer = retriever_tokenizer
+        self.opt = opt
+
+        self.READER_ALL_TOKENS = list(self.reader_tokenizer.vocab.values())
+        # self.doc_graph = pd.read_json(
+        #     "/rcfs/projects/expert/data/shar703_test/MLKG_final/AI/ACL/Author_Of.jsonl", lines=True)
+        if opt.retrieve_with_rerank_bygraph:
+            self.doc_graph = pd.read_json(opt.doc_graph_path, lines=True)
+        # self.doc_graph = dd.read_json(docgraph_path, lines=True, blocksize=500000000)
+
+    def _get_fp16_retriever_copy(self):
+        if hasattr(self.retriever, "module"):
+            retriever_to_copy = self.retriever.module
+        else:
+            retriever_to_copy = self.retriever
+        return copy.deepcopy(retriever_to_copy).half().eval()
+
+    @torch.no_grad()
+    def build_index(self, index, passages, gpu_embedder_batch_size, logger=None):
+        n_batch = math.ceil(len(passages) / gpu_embedder_batch_size)
+        retrieverfp16 = self._get_fp16_retriever_copy()
+
+        total = 0
+        for i in range(n_batch):
+            batch = passages[i *
+                             gpu_embedder_batch_size: (i + 1) * gpu_embedder_batch_size]
+            batch = [self.opt.retriever_format.format(
+                **example) for example in batch]
+            batch_enc = self.retriever_tokenizer(
+                batch,
+                padding="longest",
+                return_tensors="pt",
+                max_length=min(self.opt.text_maxlength,
+                               gpu_embedder_batch_size),
+                truncation=True,
+            )
+
+            embeddings = retrieverfp16(**_to_cuda(batch_enc), is_passages=True)
+            index.embeddings[:, total: total + len(embeddings)] = embeddings.T
+            total += len(embeddings)
+            if i % 500 == 0 and i > 0:
+                logger.info(f"Number of passages encoded: {total}")
+        dist_utils.barrier()
+        logger.info(
+            f"{total} passages encoded on process: {dist_utils.get_rank()}")
+
+        if not index.is_index_trained():
+            logger.info(f"Building faiss indices")
+            index.train_index()
+    
+    ## embed the query with loaded model
+    @torch.no_grad()
+    def get_topdomain_index_name(
+        self,
+        query,
+        query_ids_retriever,
+        query_mask_retriever,
+        domain_wise_index_vec,
+        domain_map_names,
+        no_sel_indices
+    ):
+        from src.index import DistributedIndex
+        self.retriever.eval()
+        if len(query) > 0:
+            query_emb = self.retriever(
+                query_ids_retriever, query_mask_retriever, is_passages=False)
+        else:
+            query_emb = torch.empty((0, EMBEDDINGS_DIM)).cuda()  # TODO: broken
+        if self.training:
+            self.retriever.train()
+
+        index = DistributedIndex()
+        sel_domain_names = index.search_knn_domain(
+            query_emb, domain_wise_index_vec, domain_map_names, no_sel_indices)   
+        
+        return sel_domain_names
+    
+    @torch.no_grad()
+    def _retrieve(
+        self,
+        index,
+        topk,
+        query,
+        query_ids_retriever,
+        query_mask_retriever,
+        batch_metadata=None,
+        filtering_fun=None,
+        iter_stats={},
+    ):
+        self.retriever.eval()
+        if len(query) > 0:
+            query_emb = self.retriever(
+                query_ids_retriever, query_mask_retriever, is_passages=False)
+        else:
+            query_emb = torch.empty((0, EMBEDDINGS_DIM)).cuda()  # TODO: broken
+        if self.training:
+            self.retriever.train()
+
+        # topk= retrive-context, filtering_overretrieve_ratio=2
+
+        search_start = time.time()
+        if filtering_fun is not None:
+            passages, scores = index.search_knn(
+                query_emb, topk * self.opt.filtering_overretrieve_ratio)
+            passages, scores = filtering_fun(
+                batch_metadata, passages, scores, topk, training=self.training)
+            # print("## total passages", len(passages[0]))
+        else:
+            passages, scores = index.search_knn(query_emb, topk)
+        # iter_stats["runtime/search"] = (time.time() - search_start, 1)
+
+        return passages, scores, query_emb
+
+    # pass this to enable reranking with fresh passage encoder for retriever. Retriever update strategy
+    @torch.no_grad()
+    def retrieve_with_rerank(
+        self,
+        index,
+        topk,
+        query,
+        query_ids_retriever,
+        query_mask_retriever,
+        batch_metadata=None,
+        filtering_fun=None,
+        iter_stats={},
+    ):
+        bsz = len(query)
+        ##### edit by sai #####
+
+        # to_rerank = self.opt.n_to_rerank_with_retrieve_with_rerank
+        to_rerank = self.opt.retriever_n_context
+
+        # first, do the retrieval
+        passages, _, query_emb = self._retrieve(
+            index,
+            to_rerank,
+            query,
+            query_ids_retriever,
+            query_mask_retriever,
+            batch_metadata,
+            filtering_fun,
+            iter_stats,
+        )
+        # TODO: ADD STRUCTURAL INFORMATION FOR RERANKING
+        # print("## extract passages", len(passages[0]), passages[0][0])
+        retrieverfp16 = self._get_fp16_retriever_copy()
+
+        fstr = self.opt.retriever_format
+        flat_passage_strings = [fstr.format(**p)
+                                for ps in passages for p in ps]
+        encoder_batch_size = min(
+            len(flat_passage_strings), self.opt.per_gpu_embedder_batch_size)
+        passage_emb, output_passages, output_scores = (
+            query_emb.new_zeros(len(flat_passage_strings),
+                                query_emb.shape[-1]),
+            [],
+            [],
+        )
+
+        for b in range(0, len(flat_passage_strings), encoder_batch_size):
+            batch = flat_passage_strings[b: b + encoder_batch_size]
+            batch_enc = self.retriever_tokenizer(
+                batch,
+                padding="longest",
+                return_tensors="pt",
+                max_length=min(self.opt.text_maxlength, BERT_MAX_SEQ_LENGTH),
+                truncation=True,
+            )
+            # encode with up to date retriever
+            batch_emb = retrieverfp16(
+                **_to_cuda(batch_enc), is_passages=True).to(query_emb)
+
+            passage_emb[b: b + encoder_batch_size] = batch_emb
+
+        # print("## re-rank passage emb", passage_emb.shape)
+
+        passage_emb = passage_emb.view(bsz, to_rerank, -1)
+        # compute scores for all retrieved passages but with updated embedding vectors
+        retriever_scores = torch.einsum(
+            "id, ijd->ij", [query_emb, passage_emb])
+        top_retriever_scores, top_retriever_inds = torch.topk(
+            retriever_scores, topk, dim=1)
+
+        for i in range(bsz):
+            output_passages.append([passages[i][j]
+                                   for j in top_retriever_inds[i]])
+            output_scores.append(top_retriever_scores[i].tolist())
+        # print("## rerank passages", len(output_passages[0]))
+        return output_passages, output_scores
+
+    ##### edit by sai ####
+    #### retrive passages and rerank with graph info ####
+    @torch.no_grad()
+    def retrieve_with_rerank_bygraph(
+        self,
+        index,
+        topk,
+        query,
+        query_ids_retriever,
+        query_mask_retriever,
+        batch_metadata=None,
+        filtering_fun=None,
+        iter_stats={},
+    ):
+
+        bsz = len(query)
+        to_rerank = self.opt.retriever_n_context_beforererank
+
+        # first, do the retrieval
+        passages, scores, query_emb = self._retrieve(
+            index,
+            to_rerank,
+            query,
+            query_ids_retriever,
+            query_mask_retriever,
+            batch_metadata,
+            filtering_fun,
+            iter_stats,
+        )
+
+        # TODO: ADD STRUCTURAL INFORMATION FOR RERANKING
+        # print("## extract passages", len(passages[0]))
+
+        # get embeddings from copy of upto date retriever model in eval mode ##
+        retrieverfp16 = self._get_fp16_retriever_copy()
+
+        fstr = self.opt.retriever_format
+        flat_passage_strings = [fstr.format(**p)
+                                for ps in passages for p in ps]
+        encoder_batch_size = min(
+            len(flat_passage_strings), self.opt.per_gpu_embedder_batch_size)
+
+        passage_emb, output_passages, output_scores = (
+            query_emb.new_zeros(len(flat_passage_strings),
+                                query_emb.shape[-1]),
+            [],
+            [],
+        )
+
+        for b in range(0, len(flat_passage_strings), encoder_batch_size):
+            batch = flat_passage_strings[b: b + encoder_batch_size]
+            batch_enc = self.retriever_tokenizer(
+                batch,
+                padding="longest",
+                return_tensors="pt",
+                max_length=min(self.opt.text_maxlength, BERT_MAX_SEQ_LENGTH),
+                truncation=True,
+            )
+            # encode with up to date retriever
+            batch_emb = retrieverfp16(
+                **_to_cuda(batch_enc), is_passages=True).to(query_emb)
+
+            passage_emb[b: b + encoder_batch_size] = batch_emb
+
+        ######## construct passage graph ##############
+        passages_ids = [sub['id'].split('_')[0:2] for sub in list(passages[0])]
+        passages_ids = ["_".join(ele) for ele in passages_ids]
+
+        # print("## passage ids", len(passages_ids), passages_ids[0:4])
+        # print("doc graph head", self.doc_graph.head(5))
+
+        t1 = time.time()
+        passage_df = self.doc_graph[(self.doc_graph["NodeID_A"].isin(passages_ids)) & (
+            self.doc_graph["NodeID_B"].isin(passages_ids))]
+        # passage_df = self.doc_graph.loc[(self.doc_graph["NodeID_A"].isin(passages_ids)) & (
+        #     self.doc_graph["NodeID_B"].isin(passages_ids))].compute()
+        
+        # print("doc graph time", time.time()-t1)        
+        # print(passage_df.shape)
+
+        G0 = nx.from_pandas_edgelist(
+            passage_df, source='NodeID_A', target='NodeID_B')
+
+        # print("## graph", G0.nodes)
+        # print("emb shape", passage_emb.shape, type(passage_emb), passage_emb[0] )
+        # passage_emb_cpu = passage_emb.detach().cpu().numpy()
+
+        # attrs = {ele1: passage_emb_cpu[count]
+        #          for count, ele1 in enumerate(passages_ids)}
+        # print("## attrs", passage_emb_cpu.shape)
+
+        # nx.set_node_attributes(G0, attrs)
+        # print("## graph", G0.nodes)
+        # exit()
+        G = from_networkx(G0)
+        G.x = passage_emb
+        # print("## pyg_graph", G.x.shape, G.edge_index.shape)
+        G.edge_index = G.edge_index.to(G.x.device)
+        # print("## re-rank passage emb", passage_emb.shape, passage_emb[0])
+        passage_graph_emb, _ = self.retriever_graph(G.x, G.edge_index)
+
+        # passage_emb = passage_emb.view(bsz, to_rerank, -1)
+        passage_graph_emb = passage_graph_emb.view(
+            bsz, -1, passage_graph_emb.size(-1))
+
+        # compute scores for all retrieved passages but with updated embedding vectors
+        retriever_graph_scores = torch.einsum(
+            "id, ijd->ij", [query_emb, passage_graph_emb])
+
+        # print("retr_scores", len(retriever_graph_scores), retriever_graph_scores[0])
+
+        top_retriever_graph_scores, top_retriever_graph_inds = torch.topk(
+            retriever_graph_scores, 2 * topk, dim=1)
+        # print("retr_scores", top_retriever_graph_scores[0])
+
+        output_passages = []
+        output_scores = []
+
+        for i in range(bsz):
+            output_passages.append([passages[i][j]
+                                   for j in top_retriever_graph_inds[i]])
+            output_scores.append(top_retriever_graph_scores[i])
+
+        # print("## rerank passages", len(output_passages[0]))
+
+        # TODO: ADD STRUCTURAL INFORMATION FOR RERANKING
+        # get tokens of passages and query
+        # reader_tokens, retriever_tokens = self.tokenize_passages(
+        #     query, passages)
+
+        # # TODO retriever tokenize but call in eval mode
+        # query_emb = self.retriever(**query_enc, is_passages=False)
+
+        # retriever_tokens = {k: v.reshape(-1, v.size(-1))
+        #                     for k, v in retriever_tokens.items()}
+
+        # # compute embeddings with the upto date retriever model
+        # passage_emb = self.retriever(
+        #     **retriever_tokens, is_passages=True).to(query_emb)
+
+        # print("## passage emb", passage_emb.shape, len(
+        #     retriever_tokens), retriever_tokens.keys(), len(retriever_tokens['input_ids']),
+        #     len(retriever_tokens['input_ids'][0]))
+
+        return output_passages, output_scores, passages
+
+    @ torch.no_grad()
+    def retrieve(self, *args, **kwargs):
+        # retrieve_func = self.retrieve_with_rerank if self.opt.retrieve_with_rerank else self._retrieve
+        if self.opt.retrieve_with_rerank_bygraph:
+            retrieve_func = self.retrieve_with_rerank_bygraph
+            passages, scores, extract_passages = retrieve_func(
+                *args, **kwargs)[:3]
+            return passages, scores, extract_passages
+        else:
+            retrieve_func = self._retrieve
+            passages, scores, query_emb = retrieve_func(*args, **kwargs)
+
+            return passages, scores, query_emb
+
+    def append_query(self, query, passages):
+        return [self.opt.encoder_format.format(query=query, **p) for p in passages]
+
+    def retriever_tokenize(self, query):
+        if self.retriever_tokenizer:
+            query_enc = self.retriever_tokenizer(
+                query,
+                max_length=min(self.opt.text_maxlength, BERT_MAX_SEQ_LENGTH),
+                padding="max_length",
+                truncation=True,
+                return_tensors="pt",
+            )
+            query_enc = _to_cuda(query_enc)
+        else:
+            query_enc = None
+        return _to_cuda(query_enc)
+
+    def reader_tokenize(self, query, target, target_tokens):
+        if target_tokens is None:
+            if self.opt.decoder_prompt_format is not None:
+                modified_query = [self.opt.decoder_prompt_format.format_map(
+                    {"query": q}) for q in query]
+                target = [q + t for (q, t) in zip(modified_query, target)]
+
+                query_mask = self.reader_tokenizer(
+                    modified_query,
+                    max_length=self.opt.target_maxlength,
+                    padding="max_length",
+                    truncation=True,
+                    return_tensors="pt",
+                    add_special_tokens=False,
+                )["attention_mask"]
+
+            if self.opt.decoder_format is not None:
+                target = [self.opt.decoder_format.format(
+                    target=t) for t in target]
+            target = [
+                t + "</s>" if not t.endswith("</s>") else t for t in target]
+
+            target_tokens = self.reader_tokenizer(
+                target,
+                max_length=self.opt.target_maxlength,
+                padding="max_length",
+                truncation=True,
+                return_tensors="pt",
+                add_special_tokens=False,
+            )
+
+        decoder_input_ids = self.reader._shift_right(
+            target_tokens["input_ids"])
+        labels = target_tokens["input_ids"].masked_fill(
+            ~target_tokens["attention_mask"].bool(), IGNORE_INDEX)
+
+        # If decoder prompt is not None mask labels such that the model is not trained to predict the prompt
+        if self.opt.decoder_prompt_format is not None:
+            query_mask = self.reader_tokenizer(
+                modified_query,
+                max_length=self.opt.target_maxlength,
+                padding="max_length",
+                truncation=True,
+                return_tensors="pt",
+                add_special_tokens=False,
+            )["attention_mask"]
+
+            padding = torch.zeros(
+                (query_mask.size(0), target_tokens["input_ids"].size(-1) - query_mask.size(-1)))
+            query_mask = torch.cat([query_mask, padding], dim=1)
+            labels = labels.masked_fill(query_mask.bool(), IGNORE_INDEX)
+
+        return labels.cuda(), decoder_input_ids.cuda()
+
+    def tokenize(self, query, target, target_tokens):
+        if query is None and target is None:
+            return None, None, None
+
+        assert (
+            target_tokens is None or self.opt.decoder_prompt_format is None
+        ), "decoder_prompt_format not compatible with target tokenized in iterator"
+
+        query_enc = self.retriever_tokenize(
+            query) if not self.opt.use_file_passages else None
+        labels, decoder_input_ids = self.reader_tokenize(
+            query, target, target_tokens)
+        return query_enc, labels, decoder_input_ids
+
+    def tokenize_passages(self, query, passages):
+        if len(query) == 0:
+            return None, None
+
+        query_passages = [self.append_query(q, p)
+                          for q, p in zip(query, passages)]
+
+        fstr = self.opt.retriever_format
+        retriever_passages = [
+            [fstr.format(**p) for p in example] for example in passages]
+        if self.retriever_tokenizer:
+            retriever_tok = encode_passages(
+                retriever_passages,
+                self.retriever_tokenizer,
+                min(self.opt.text_maxlength, BERT_MAX_SEQ_LENGTH),
+            )
+            retriever_tok = _to_cuda(retriever_tok)
+        else:
+            retriever_tok = None
+        reader_tok = encode_passages(
+            query_passages, self.reader_tokenizer, self.opt.text_maxlength)
+        reader_tok = _to_cuda(reader_tok)
+        return reader_tok, retriever_tok
+
+    def perplexity_score(self, reader_ids, reader_mask, decoder_input_ids, labels, cfg, bsz):
+        with torch.no_grad():
+            self.reader.eval()
+            total_context = reader_ids.size(1)
+            cfg.n_context = 1
+            cfg.bsz = bsz * total_context
+            reader_ids_score = reader_ids.view(bsz * total_context, -1)
+            reader_mask_score = reader_mask.view(bsz * total_context, -1)
+            repeated_decoder_input_ids = torch.repeat_interleave(
+                decoder_input_ids, total_context, dim=0)
+            repeated_labels = torch.repeat_interleave(
+                labels, total_context, dim=0)
+            
+            # logger.info(f"reader ids 4 gold score:{reader_ids_score.shape,reader_mask_score.shape,repeated_decoder_input_ids.shape}")
+            
+            reader_output = self.reader(
+                input_ids=reader_ids_score.cuda(),
+                attention_mask=reader_mask_score.cuda(),
+                decoder_input_ids=repeated_decoder_input_ids,
+                labels=repeated_labels,
+                use_cache=False,
+            )
+
+            # logger.info(f"logits shape per score:{reader_output.logits.shape}"
+                    # )
+            
+            token_loss = nn.functional.cross_entropy(
+                reader_output.logits.view(-1, reader_output.logits.size(-1)),
+                repeated_labels.flatten(),
+                reduction="none",
+            )
+            gold_score = token_loss.view(bsz, total_context, -1)
+            z = (repeated_labels.view(bsz, total_context, -1) > -1).sum(dim=-1)
+            gold_score = -gold_score.sum(dim=-1) / z
+
+            return gold_score
+
+    def eval_score(self, reader_ids, reader_mask, decoder_input_ids, labels, cfg, bsz, mask_query):
+        self.reader.eval()
+        self.reader.reset_score_storage()
+        cfg.bsz = reader_ids.size(0)
+        cfg.n_context = reader_ids.size(1)
+        reader_ids_score = reader_ids.view(reader_ids.size(0), -1)
+        reader_mask_score = reader_mask.view(reader_mask.size(0), -1)
+        with torch.no_grad():
+            reader_output = self.reader(
+                input_ids=reader_ids_score,
+                attention_mask=reader_mask_score,
+                decoder_input_ids=decoder_input_ids,
+                labels=labels,
+                use_cache=False,
+            )
+            crossattention_scores = self.reader.get_crossattention_scores(
+                cfg.n_context,
+                reader_mask_score,
+                labels=labels,
+                ids=reader_ids,
+                mode=self.opt.gold_score_mode,
+                mask_query=mask_query,
+            )
+            gold_score = select_crossattention_scores(
+                crossattention_scores, self.opt.gold_score_mode)
+
+            if self.training:
+                self.reader.train()
+            return gold_score
+
+    def loop_score(self, reader_ids, reader_mask, decoder_input_ids, labels, cfg, bsz):
+        with torch.no_grad():
+            total_context = reader_ids.size(1)
+            doc_len = reader_ids.size(-1)
+            self.reader.eval()
+            cfg.bsz = bsz
+            cfg.n_context = total_context
+            reader_ids_score_eval = reader_ids.view(reader_ids.size(0), -1)
+            reader_mask_score_eval = reader_mask.view(reader_mask.size(0), -1)
+
+            # forward pass for calculating and caching the encoder states:
+            reader_output_eval = self.reader(
+                input_ids=reader_ids_score_eval,
+                attention_mask=reader_mask_score_eval,
+                decoder_input_ids=decoder_input_ids,
+                labels=labels,
+                use_cache=False,
+            )
+            eval_hidden_state = reader_output_eval.encoder_last_hidden_state
+
+            # run n_docs - 1 forward passes to calculate pp when leaving a doc out
+            gold_scores = []
+            for loo_index in range(total_context):
+                reader_mask_loo = reader_mask.clone()
+                reader_mask_loo[:, loo_index] = False  # mask out this doc
+                loo_output_eval = self.reader(
+                    encoder_outputs=[eval_hidden_state],
+                    attention_mask=reader_mask_loo.view(
+                        bsz, (total_context) * doc_len),
+                    decoder_input_ids=decoder_input_ids,
+                    labels=labels,
+                    use_cache=False,
+                )
+                token_loss = nn.functional.cross_entropy(
+                    loo_output_eval.logits.view(-1, loo_output_eval.logits.size(-1)), labels.view(-1), reduction="none"
+                )
+                mean_loss = token_loss.view(
+                    bsz, labels.shape[-1]).sum(dim=-1) / (labels > -1).sum(-1)
+                gold_scores.append(mean_loss)
+
+            gold_score = torch.stack(gold_scores, dim=1)
+
+            return gold_score
+
+    @ torch.no_grad()
+    def emdr_score(self, reader_ids, reader_mask, decoder_input_ids, labels, cfg, bsz):
+        self.reader.eval()
+        cfg.n_context = 1
+        cfg.bsz = bsz * self.opt.retriever_n_context
+        reader_ids_score = reader_ids.view(
+            bsz * self.opt.retriever_n_context, -1)
+        reader_mask_score = reader_mask.view(
+            bsz * self.opt.retriever_n_context, -1)
+        repeated_decoder_input_ids = torch.repeat_interleave(
+            decoder_input_ids, self.opt.retriever_n_context, dim=0)
+        repeated_labels = torch.repeat_interleave(
+            labels, self.opt.retriever_n_context, dim=0)
+        reader_output = self.reader(
+            input_ids=reader_ids_score.cuda(),
+            attention_mask=reader_mask_score.cuda(),
+            labels=repeated_labels,
+            use_cache=False,
+        )
+        gold_score = reader_output.logits
+        return gold_score
+
+    def forward(
+        self,
+        index,
+        query,
+        target,
+        target_tokens=None,
+        passages=None,
+        batch_metadata=None,
+        filtering_fun=None,
+        use_cache=False,
+        train_retriever=False,
+        iter_stats={},
+    ):
+        # sys.settrace(traceit)
+        # forward_start = time.time()
+        bsz = len(query)
+
+        query_mask_reader = (
+            self.reader_tokenizer.batch_encode_plus(
+                query,
+                max_length=self.opt.text_maxlength,
+                padding="longest",
+                truncation=True,
+                return_tensors="pt",
+                add_special_tokens=False,
+            )["attention_mask"]
+            .bool()
+            .cuda()
+        )
+
+        query_enc, labels, decoder_input_ids = self.tokenize(
+            query, target, target_tokens)
+
+        # print("## retrieve with rerank", self.opt.retrieve_with_rerank)
+        if not self.opt.use_file_passages:
+            retrieve_start = time.time()
+            passages, score, query_emb_fordevice = self.retrieve(
+                index,
+                self.opt.retriever_n_context,
+                query,
+                query_enc["input_ids"],
+                query_enc["attention_mask"],
+                batch_metadata=batch_metadata,
+                filtering_fun=filtering_fun,
+                iter_stats=iter_stats,
+            )
+        ## edit by sai
+        # iter_stats["runtime/retrieve"] = (time.time() - retrieve_start, 1)
+        
+        # batch_struct_emb = np.array([np.reshape(ele1['struct_emb'],(ele1['struct_emb'].shape[0],)) for ele2 in passages for ele1 in ele2])
+        # batch_struct_emb = np.array([ele1['struct_emb'] for ele2 in passages for ele1 in ele2])
+        
+        # batch_struct_list = []
+        # for ele2 in passages:               
+        #     batch_struct_list.append(torch.Tensor(np.array([ele1['struct_emb'] for ele1 in ele2])))
+        
+        # batch_struct_emb = torch.Tensor(batch_struct_emb)
+        # logger.info(f"batch_struct_emb:{batch_struct_emb.shape}")
+        # batch_struct_emb_tensor = torch.cat(batch_struct_list, axis=0)
+        # batch_struct_emb = batch_struct_emb_tensor.to(query_emb_fordevice.device)
+        
+        ## PROJECTION LAYER from struct emb into text emb space
+        # batch_struct_emb = self.projector(batch_struct_emb)
+
+        # batch_struct_emb = torch.reshape(batch_struct_emb, (batch_struct_emb.shape[0], 1, batch_struct_emb.shape[1]))
+
+        # logger.info(f"retrieved passages:{len(passages),len(passages[0]),type(passages[0]),batch_struct_emb.shape}")
+
+        # print("## retrieved passage", len(
+        #     passages[0]), len(extract_passages[0]))
+        # print("## retriever graph score", retriever_graph_score)
+
+        # tokens of the input query and passages with length of each passage/query be 512 tokens
+        reader_tokens, retriever_tokens = self.tokenize_passages(
+            query, passages)
+        # _, retriever_tokens = self.tokenize_passages(
+        #     query, extract_passages)
+
+        reader_ids = reader_tokens["input_ids"]  # FIXME
+        reader_mask = reader_tokens["attention_mask"].bool()
+
+        # logger.info(f"len retr passages:{len(query),len(passages[0]),reader_ids.shape,batch_struct_emb.shape}")
+
+        n_context_training = min(self.opt.n_context, reader_ids.size(1))
+
+        cfg = self.reader.encoder.config
+
+        retriever_loss = None
+        retriever_graph_loss = None
+
+        # main training block
+        if train_retriever:
+
+            if self.opt.use_gradient_checkpoint_retriever:
+                self.retriever.gradient_checkpointing_enable()
+
+            query_emb = self.retriever(**query_enc, is_passages=False)
+
+            # default std is NOT in gold_score_mode
+            if "std" in self.opt.gold_score_mode:
+                retriever_tokens = {k: v[:, :n_context_training]
+                                    for k, v in retriever_tokens.items()}
+
+            retriever_tokens = {k: v.reshape(-1, v.size(-1))
+                                for k, v in retriever_tokens.items()}
+
+            # compute embeddings with the upto date retriever model
+            passage_emb = self.retriever(
+                **retriever_tokens, is_passages=True).to(query_emb)
+
+            # print("## shape", passage_emb.shape)
+            # print("## passage emb", passage_emb.shape, len(
+            #     retriever_tokens), retriever_tokens.keys(), len(retriever_tokens['input_ids']),
+            #     retriever_tokens['input_ids'][0:2],
+            #     len(retriever_tokens['input_ids'][0]))
+
+            passage_emb = passage_emb.view(bsz, -1, passage_emb.size(-1))
+
+            retriever_score = torch.einsum(
+                "id, ijd->ij", [query_emb, passage_emb])
+
+            # print("## retriever shape", len(retriever_score[0]))
+            # print("## retriever scores",
+            #       retriever_score[0], retriever_graph_score[0])
+
+            if self.opt.use_gradient_checkpoint_retriever:
+                self.retriever.gradient_checkpointing_disable()
+
+            if "eval" in self.opt.gold_score_mode:
+                gold_score = self.eval_score(
+                    reader_ids, reader_mask, decoder_input_ids, labels, cfg, bsz, query_mask_reader
+                )
+
+            elif "loop" in self.opt.gold_score_mode:
+                gold_score = self.loop_score(
+                    reader_ids, reader_mask, decoder_input_ids, labels, cfg, bsz)
+            # for PPdist
+            ## calls fid and modeling_t5 forward for computing score
+            elif "ppmean" in self.opt.gold_score_mode:
+                # logger.info(f"gold score called:")
+                # gold_score = self.perplexity_score(
+                #     reader_ids, reader_mask, decoder_input_ids, labels, cfg, bsz, batch_struct_emb)
+                gold_score = self.perplexity_score(
+                    reader_ids, reader_mask, decoder_input_ids, labels, cfg, bsz)
+                # print("ppmean")
+            elif "emdr" in self.opt.gold_score_mode:
+                gold_score = self.emdr_score(
+                    reader_ids, reader_mask, decoder_input_ids, labels, cfg, bsz)
+            
+            # logger.info(f"reset storage:{self.opt.gold_score_mode}")
+            self.reader.reset_score_storage()
+
+            if self.training:
+                # logger.info(f"reader training mode:")
+                self.reader.train()
+
+        # logger.info("query and passages emb computed")
+        cfg.bsz = reader_ids.size(0)
+        cfg.n_context = n_context_training
+        # logger.info(f"n_context_training:{n_context_training}")
+
+        ## edit by sai
+        reader_ids_training = reader_ids[:, :n_context_training].contiguous()
+        reader_mask_training = reader_mask[:, :n_context_training].contiguous()
+        
+        # batch_struct_emb_tensor = batch_struct_emb_tensor.view(len(batch_struct_list),batch_struct_list[0].shape[0],-1)
+        # # print(batch_struct_emb_tensor.shape)
+        # batch_struct_emb_tensor_training = batch_struct_emb_tensor[:, :n_context_training].contiguous()
+        # # print(batch_struct_emb_tensor_training.shape)
+        # batch_struct_emb_tensor_training = batch_struct_emb_tensor_training.view(batch_struct_emb_tensor_training.shape[0]*batch_struct_emb_tensor_training.shape[1],batch_struct_emb_tensor_training.shape[2])
+        # # print(batch_struct_emb_tensor_training.shape)
+        # batch_struct_emb_tensor_training = batch_struct_emb_tensor_training.to(query_emb_fordevice.device)
+
+        ## PROJECTION LAYER from struct emb into text emb space
+        # batch_struct_emb_training = self.projector(batch_struct_emb_tensor_training)
+
+        # batch_struct_emb_training = torch.reshape(batch_struct_emb_training, (batch_struct_emb_training.shape[0], 1, batch_struct_emb_training.shape[1]))
+
+        # logger.info(f"reader ids for train :{reader_ids.shape,reader_ids_training.shape,batch_struct_emb_training.shape}")
+        
+        reader_ids_training = reader_ids_training.view(reader_ids.size(0), -1)
+        
+        reader_mask_training = reader_mask_training.view(
+            reader_mask.size(0), -1)
+
+        if self.opt.use_gradient_checkpoint_reader:
+            self.reader.gradient_checkpointing_enable()
+
+        # logger.info(f"len reader ids 4 forward pass:{reader_ids_training.shape,reader_mask_training.shape,decoder_input_ids.shape}")
+
+        ## edit 
+        # prediction from LM
+        reader_output = self.reader(
+            input_ids=reader_ids_training,
+            attention_mask=reader_mask_training,
+            decoder_input_ids=decoder_input_ids,
+            labels=labels,
+            use_cache=False,
+        )
+        # logger.info(f"logits shape for pass:{reader_output.logits.shape}"
+        # )
+
+        # logger.info(f"reader pred computed:{len(reader_output),reader_output[0]}")
+        # LM loss
+        reader_loss = reader_output[0]
+        
+        if self.opt.use_gradient_checkpoint_reader:
+            self.reader.gradient_checkpointing_disable()
+
+        if train_retriever:
+            if self.opt.compute_crossattention_stats or "std" in self.opt.gold_score_mode:
+                crossattention_scores = self.reader.get_crossattention_scores(
+                    n_context_training,
+                    reader_mask_training.cuda(),
+                    ids=reader_ids_training.cuda(),
+                    mask_query=query_mask_reader.cuda(),
+                    labels=labels,
+                    mode="all",
+                )
+            if "std" in self.opt.gold_score_mode:
+                gold_score = select_crossattention_scores(
+                    crossattention_scores, self.opt.gold_score_mode
+                ).detach()  # TODO: is detach really useful here?
+
+            retriever_score = retriever_score / np.sqrt(query_emb.size(-1))
+
+            if self.opt.retrieve_with_rerank_bygraph:
+                retriever_graph_score = score[0] / np.sqrt(
+                    query_emb.size(-1))
+
+            if self.opt.compute_crossattention_stats:
+                with torch.no_grad():
+                    for k, v in crossattention_scores.items():
+                        corr = torch.corrcoef(torch.stack(
+                            [gold_score.view(-1), v.view(-1)]))
+                        corr = corr[0, 1].item()
+                        if np.isnan(corr):
+                            corr = 0.0
+                        # iter_stats[f"corr/{k}"] = (corr, len(query))
+
+            # average loss across no of retrived passages
+            if gold_score is not None:
+                gold_score = gold_score.float()
+                # print("retriever scores", retriever_score[0], retriever_graph_score[0])
+                retriever_score = retriever_score.float()
+                # print("retriever scores", retriever_score[0], retriever_graph_score[0])
+                if self.opt.retrieve_with_rerank_bygraph:
+                    retriever_graph_score = retriever_graph_score.float()
+
+                if self.opt.gold_score_mode == "emdr":
+                    retriever_loss = self.logprob(
+                        retriever_score, gold_score, labels)
+                else:
+                    retriever_loss = self.kldivloss(
+                        retriever_score, gold_score)
+                    if self.opt.retrieve_with_rerank_bygraph:
+                        retriever_graph_loss = self.kldivloss(
+                            retriever_graph_score, gold_score)
+
+        self.reader.reset_score_storage()
+        # iter_stats["loss/reader_loss"] = (reader_loss.item(), len(query))
+        # if retriever_loss is not None:
+        #     iter_stats["loss/retriever_loss"] = (
+        #         retriever_loss.item(), len(query))
+
+        # iter_stats["runtime/forward"] = (time.time() - forward_start, 1)
+        
+        return reader_loss, retriever_loss, retriever_graph_loss
+
+    def kldivloss(self, score, gold_score):
+        gold_score = torch.softmax(
+            gold_score / self.opt.temperature_gold, dim=-1)
+        score = torch.nn.functional.log_softmax(
+            score / self.opt.temperature_score, dim=-1)
+        return torch.nn.KLDivLoss()(score, gold_score)
+
+    def logprob(self, score, gold_score, labels):
+        with torch.no_grad():
+            repeated_labels = torch.repeat_interleave(
+                labels, self.opt.retriever_n_context, dim=0)
+            repeated_labels[repeated_labels == IGNORE_INDEX] = 0
+
+            mask_labels = labels >= 0
+
+            gold_log_prob = torch.nn.functional.log_softmax(
+                gold_score / self.opt.temperature_gold, dim=-1)
+            gold_log_probs = torch.gather(gold_log_prob, dim=-1, index=repeated_labels[..., None]).view(
+                gold_log_prob.size(0), -1
+            )
+            gold_log_probs = gold_log_probs.view(
+                score.size(0), score.size(1), -1)
+
+        log_score = torch.nn.functional.log_softmax(
+            score / self.opt.temperature_score, dim=-1)
+        log_prob = gold_log_probs + log_score[..., None]
+        logsumprobs = torch.logsumexp(log_prob, dim=1)
+        loss = -1 * torch.sum(logsumprobs * mask_labels) / \
+            torch.sum(mask_labels)
+
+        return loss
+
+    @ torch.no_grad()
+    def compute_reader_loss_and_logits(self, tokens, decoder_input_ids, labels):
+        cfg = self.reader.encoder.config
+        cfg.bsz = tokens["input_ids"].size(0)
+        cfg.n_context = min(self.opt.n_context, tokens["input_ids"].size(1))
+
+        reader_loss = self.reader(
+            input_ids=tokens["input_ids"].cuda().view(
+                tokens["input_ids"].size(0), -1),
+            attention_mask=tokens["attention_mask"].cuda().view(
+                tokens["attention_mask"].size(0), -1),
+            decoder_input_ids=decoder_input_ids.cuda(),
+            labels=labels.cuda(),
+            use_cache=False,
+        )
+        return reader_loss[0].cpu().item(), reader_loss[1]
+
+    @ torch.no_grad()
+    def generate(self, tokens, query, choices=None):
+        cfg = self.reader.encoder.config
+        cfg.bsz = tokens["input_ids"].size(0)
+        cfg.n_context = min(self.opt.n_context, tokens["input_ids"].size(1))
+
+        tokens = {k: v.view(v.size(0), -1) for k, v in tokens.items()}
+
+        bos_token_id = None
+
+        prefix_allowed_tokens_fn = None
+        if self.opt.decoder_prompt_format is not None:
+            prefix_str = [self.opt.decoder_prompt_format.format_map(
+                {"query": q}) for q in query]
+            prefix_allowed_tokens_fn = self.get_prefix_allowed_tokens_fn(
+                prefix_str)
+
+        outputs = self.reader.generate(
+            input_ids=tokens["input_ids"].cuda(),
+            attention_mask=tokens["attention_mask"].cuda(),
+            num_return_sequences=1,
+            max_length=self.opt.generation_max_length,
+            min_length=self.opt.generation_min_length,
+            num_beams=self.opt.generation_num_beams,
+            length_penalty=self.opt.generation_length_penalty,
+            forced_bos_token_id=bos_token_id,
+            prefix_allowed_tokens_fn=prefix_allowed_tokens_fn,
+        )
+        
+        extra_outputs = self.reader.generate(
+            input_ids=tokens["input_ids"].cuda(),
+            attention_mask=tokens["attention_mask"].cuda(),
+            num_return_sequences=3,
+            max_length=self.opt.generation_max_length,
+            min_length=self.opt.generation_min_length,
+            num_beams=5,
+            length_penalty=self.opt.generation_length_penalty,
+            forced_bos_token_id=bos_token_id,
+            prefix_allowed_tokens_fn=prefix_allowed_tokens_fn,
+            output_scores = True,
+            return_dict_in_generate=True,
+        )
+        # logger.info(f"generation:{outputs.scores.shape,outputs.sequences.shape}")
+
+        return outputs, extra_outputs
+
+    def get_prefix_allowed_tokens_fn(self, prefix_str: Optional[str] = None):
+        if prefix_str:
+            prefix_tokens_ids = self.reader_tokenizer.batch_encode_plus(prefix_str, add_special_tokens=False)[
+                "input_ids"
+            ]
+
+            def prefix_allowed_tokens_fn(batch_id: int, input_ids: torch.Tensor) -> List[int]:
+                if input_ids.shape[-1] > len(prefix_tokens_ids[batch_id]):
+                    return self.READER_ALL_TOKENS
+
+                return prefix_tokens_ids[batch_id][input_ids.shape[-1] - 1]
+
+        else:
+            prefix_allowed_tokens_fn = None
+
+        return prefix_allowed_tokens_fn
+
+
+def select_crossattention_scores(scores, mode):
+    if "eval" in mode:
+        return scores[mode[len("eval"):]]
+    elif "std" in mode:
+        return scores[mode[len("std"):]]
+
+
+def _to_cuda(tok_dict):
+    return {k: v.cuda() for k, v in tok_dict.items()}
+
+# def traceit(frame, event, arg):
+#     if event == "line":
+#         lineno = frame.f_lineno
+#         try:
+#             filename = frame.f_globals["__file__"]
+#             if filename == "<stdin>":
+#                 filename = "traceit.py"
+#             if (filename.endswith(".pyc") or
+#                 filename.endswith(".pyo")):
+#                 filename = filename[:-1]
+#             name = frame.f_globals["__name__"]
+#             line = linecache.getline(filename, lineno)
+#             if ("src.custom_modeling_t5" in name) or ("src.fid" in name) or ("src.atlas" in name):
+#                 print("%s:%s: %s" % (name, lineno, line.rstrip()))
+#             # else:
+#             #     print("%s:%s: %s" % (name, lineno, line.rstrip()))
+#         except:
+#             print("--")
+#     return traceit

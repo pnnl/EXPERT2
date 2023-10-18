@@ -1,0 +1,101 @@
+QID,Difficulty,Question Format,Answer Format,Answer Type
+1,Easy,Short QA,Multiple Correct,Scientific
+2,Medium,Short QA,Multiple Correct,Num + Sci
+3,Medium,Short QA,Multiple Correct,General
+4,Easy,Short QA,Multiple Correct,Scientific
+5,Easy,Short QA,Multiple Correct,General
+6,Easy,Short QA,Multiple Correct,Scientific
+7,Medium,Short QA,Multiple Correct,Scientific
+8,Medium,Short QA,Multiple Correct,General
+9,Hard,Short QA,Multiple Correct,Scientific
+10,Hard,Short QA,Multiple Correct,Scientific
+11,Medium,Short QA,Multiple Correct,Scientific
+12,Easy,Short QA,Single Correct,Scientific
+13,Easy,Short QA,Single Correct,Numerical
+14,Easy,Short QA,Multiple Correct,Num + Sci
+15,Easy,Short QA,Single Correct,General
+16,Easy,Short QA,Single Correct,General
+17,Easy,Short QA,Single Correct,Scientific
+18,Easy,Short QA,Single Correct,General
+19,Easy,Short QA,Single Correct,Numerical
+20,Easy,Short QA,Single Correct,General
+21,Easy,Short QA,Single Correct,Numerical
+22,Easy,Short QA,Single Correct,General
+23,Easy,Short QA,Single Correct,Scientific
+24,Easy,Short QA,Single Correct,Scientific
+25,Easy,Short QA,Single Correct,Scientific
+26,Easy,Short QA,Single Correct,Num + Sci
+27,Easy,Short QA,Single Correct,General
+28,Easy,Short QA,Single Correct,General
+29,Medium,Short QA,Single Correct,Numerical
+30,Medium,Short QA,Multiple Correct,General
+31,Medium,Open QA,Multiple Correct,General
+32,Medium,Short QA,Single Correct,General
+33,Medium,Short QA,Single Correct,Scientific
+34,Medium,Open QA,Single Correct,General
+35,Medium,Short QA,Single Correct,General
+36,Medium,Short QA,Single Correct,General
+37,Medium,Open QA,Multiple Correct,General
+38,Medium,Short QA,Single Correct,Scientific
+39,Medium,Short QA,Single Correct,Scientific
+40,Medium,Short QA,Single Correct,Scientific
+41,Medium,Open QA,Multiple Correct,General
+42,Medium,Short QA,Single Correct,Numerical
+43,Medium,Short QA,Single Correct,General
+44,Medium,Short QA,Single Correct,Scientific
+45,Medium,Short QA,Single Correct,Scientific
+46,Hard,Short QA,Single Correct,General
+47,Hard,Open QA,Single Correct,General
+48,Hard,Open QA,Multiple Correct,General
+49,Hard,Open QA,Single Correct,General
+50,Hard,Short QA,Single Correct,Numerical
+51,Hard,Open QA,,General
+52,Hard,Short QA,Single Correct,General
+53,Hard,Open QA,,General
+54,Hard,Open QA,,General
+55,Hard,Short QA,Single Correct,General
+56,Hard,Short QA,Single Correct,Num + Sci
+57,Hard,Open QA,,General
+58,Hard,Open QA,,General
+59,Hard,Open QA,,General
+60,Hard,Short QA,Single Correct,Numerical
+61,Hard,Open QA,Single Correct,General
+62,Hard,Open QA,Single Correct,General
+63,Hard,Short QA,Single Correct,General
+64,Hard,Open QA,Single Correct,General
+65,Hard,Open QA,Multiple Correct,General
+66,Medium,Open QA,Single Correct,Scientific
+67,Hard,Short QA,Single Correct,Numerical
+68,Hard,Short QA,Single Correct,Numerical
+69,Medium,Short QA,Single Correct,Scientific
+70,Medium,Open QA,Single Correct,General
+71,Hard,Open QA,Multiple Correct,Scientific
+72,Easy,Short QA,Single Correct,Num + Sci
+73,Easy,Short QA,Single Correct,Num + Sci
+74,Medium,Short QA,Single Correct,Scientific
+75,Hard,Short QA,Single Correct,Num + Sci
+76,Medium,Short QA,Single Correct,Num + Sci
+77,Easy,Short QA,Single Correct,Num + Sci
+78,Hard,Short QA,Single Correct,Num + Sci
+79,Medium,Short QA,Multiple Correct,Num + Sci
+80,Easy,Short QA,Single Correct,Numerical
+81,Easy,Short QA,Single Correct,Num + Sci
+82,Easy,Short QA,Single Correct,Numerical
+83,Easy,Short QA,Single Correct,Numerical
+84,Hard,Short QA,Single Correct,Numerical
+85,Hard,Open QA,,Scientific
+86,Hard,Open QA,Multiple Correct,Scientific
+87,Medium,Short QA,Single Correct,Num + Sci
+88,Hard,Short QA,Single Correct,Num + Sci
+89,Hard,Short QA,Single Correct,Num + Sci
+90,Hard,Short QA,Single Correct,Num + Sci
+91,Easy,Short QA,Single Correct,Num + Sci
+92,Hard,Short QA,Single Correct,Num + Sci
+93,Hard,Short QA,Single Correct,Numerical
+94,Hard,Short QA,Multiple Correct,Num + Sci
+95,Easy,Short QA,Single Correct,Num + Sci
+96,Medium,Open QA,Single Correct,Scientific
+97,Medium,Short QA,Single Correct,Numerical
+98,Medium,Short QA,Single Correct,Numerical
+99,Medium,Open QA,Single Correct,Scientific
+100,Easy,Open QA,Single Correct,Numerical

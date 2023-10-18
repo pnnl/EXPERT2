@@ -1,0 +1,170 @@
+
+/* input box
+.Select-control {
+    background-color: black;
+}
+
+
+/* changes the text color of input box */
+/* .Select-value-label {
+    color: white !important;
+} */
+
+/* .Select--single > .Select-control .Select-value, .Select-placeholder {
+    border: 1px solid grey;
+    border-radius: 4px;
+} */
+
+
+/* dropdown menu options */
+/* .VirtualizedSelectOption {
+    background-color: black;
+    color: white;
+ } */ 
+
+.main-card{
+    box-shadow: 5px 5px 4px 2px rgb(172, 165, 165);
+}
+
+.text-output-main{
+    text-align: left;
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+    min-height: 300px;
+    max-height: 310px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    /* padding: 10px; */
+    /* display: flex; */
+    box-shadow: 1px 1px 1px 1px rgb(172, 165, 165);
+}
+
+.text-output-div{
+    padding: 25px;
+    padding-bottom: 5px;
+    padding-top: 0px;
+}
+
+.estimator-output{
+    text-align: center;
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+    min-height: 30px;
+    padding: 10px;
+    display: flex;
+    padding:0px;
+    justify-content: center;
+    
+    box-shadow: 1px 1px 1px 1px rgb(172, 165, 165);
+}
+
+.token-level-prob{
+    width: 20%;
+    border-left: 1px solid #cccccc;
+    text-align: center;
+}
+
+
+.temp-title{
+    margin-bottom: 0px;
+    font-size: 0.85rem;
+}
+.rc-slider-mark{
+    top: 12px;
+}
+#temp_slider{
+    padding-left:10px !important;
+}
+
+
+.row-text-div{
+padding-top: 8px;
+padding-bottom: 8px;
+padding-right: 0px;
+margin-top: 12px;
+border: 1px solid grey;
+border-radius: 5px;
+}
+
+.no-output-div{
+    color: grey;
+    line-height: 300px;
+    text-align: center;
+    padding-top: 0px;
+    margin:0px;
+    overflow-y: hidden;
+}
+/* button {
+    background-color: white;
+    padding: 10px;
+    box-shadow: 2px 1px 2px gray;
+    min-height: 30px;
+}*/
+
+.go-button-active{
+    width: 100% !important;
+    text-align: center !important;
+    box-shadow: 1px 1px 1px 1px rgb(172, 165, 165);
+}
+
+.go-button-active:disabled{
+    width: 100% !important;
+    text-align: center !important;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+
+.more-text-button{
+    background-image: none;
+    background-color: rgba(0,0,0,0);
+    border:none;
+    outline:none;
+    border-width:0px;
+    color:grey;
+    font-weight: bold;
+    width:30%;
+    text-align:center;
+    margin-left:35%;
+    display:none;
+ }
+
+ .more-text-button:hover{
+    outline:none;
+    background-image: none;
+    background-color:rgba(0,0,0,0);
+    font-weight:bold;
+    border-width: none;
+    color:black
+ }
+
+ .more-text-button:active{
+    outline:none;
+    background-image: none;
+    background-color: rgba(0,0,0,0);
+    font-weight:bold;
+    border-width: thick;
+    color:black
+ }
+
+ .more-text-button:focus{
+    outline:none;
+ }
+
+ .main-tooltip{
+    background-color: aquamarine !important;
+ }
+
+  .tooltip-inner {
+    max-width: 45vw;
+    /* If max-width does not work, try using width instead */
+    width: 45vw; 
+}
+
+/* .go-button-active{
+    width: 100% !important;
+    text-align: center !important;
+    border: 1px solid #999999 !important;
+    background-color: #dc1b1b !important;
+    color: #d80606 !important;
+} */

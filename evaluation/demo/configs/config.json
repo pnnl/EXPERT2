@@ -1,0 +1,46 @@
+{
+    "biomimicry": {
+        "categories": {
+            "0": "No",
+            "1": "Yes"
+        },
+        "column": "label",
+        "task_type": "binary_classif"
+    },
+    "Field of Study": {
+        "column": "labels_text",
+        "task_type": "multilabel_classif"
+    },
+    "DRSM": {
+        "column": "label",
+        "label_type": {
+            "Gold Standard": "gold_std",
+            "Labeled": "labeled"
+        },
+        "label_col": "label_type",
+        "task_type": "singlelabel_classif"
+    },
+    "MeSH Descriptors": {
+        "column": "descriptor",
+        "task_type": "singlelabel_classif"
+    },
+    "Nuclear": {
+         "column":""
+
+    },
+    "SciDocs-MAG":{
+        "column": "labels_text",
+        "label_mapping": ["Art", "Biology", "Business", "Chemistry", "Computer science", "Economics","Engineering","Environmental science","Geography", "Geology","History","Materials science", "Mathematics", "Medicine","Philosophy", "Physics", "Political science", "Psychology","Sociology"],
+        "task_type": "singlelabel_classif",
+        "paper_col_name_1":"paper_id",
+        "paper_col_name_2":"doc_id"
+    },
+    "SciDocs-Mesh Diseases":{
+        "column": "labels_text",
+        "label_mapping": ["Cardiovascular diseases","Chronic kidney disease","Chronic respiratory diseases","Diabetes mellitus",
+                "Digestive diseases","HIV/AIDS","Hepatitis A/B/C/E", "Mental disorders","Musculoskeletal disorders", "Neoplasms (cancer)", "Neurological disorders"],
+        "task_type": "singlelabel_classif",
+        "paper_col_name_1":"paper_id",
+        "paper_col_name_2":"doc_id"
+    }    
+}

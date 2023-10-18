@@ -1,0 +1,101 @@
+﻿QID,Question,Difficulty,Question Format,Answer Format,Answer Type
+1,"Question: What are the fundamental particles of an atom?  Answer: Electron, Proton, Neutron",Easy,Short QA,Multiple Correct,Scientific
+2,"Question: How many protons and neutrons are inside a U-238 atom?  Answer: 92 protons, 146 neutrons",Medium,Short QA,Multiple Correct,Num + Sci
+3,"Question: What are the interaction types of photons with matter?  Answer: Compton scattering, photoelectric absorption, pair production",Medium,Short QA,Multiple Correct,General
+4,"Question: What fundamental quarks make up a proton?  Answer: 2 up quarks, 1 down quark",Easy,Short QA,Multiple Correct,Scientific
+5,"Question: What are the four fundamental forces?  Answer: Strong, weak, gravitational, electromagnetic",Easy,Short QA,Multiple Correct,General
+6,Question: What two particles are emitted after a pair production absorption of a gamma-ray?  Answer: Electron and positron,Easy,Short QA,Multiple Correct,Scientific
+7,"Question: List the types of radioactive decay.  Answer: Beta, alpha, gamma, positron emission, electron capture, internal conversion",Medium,Short QA,Multiple Correct,Scientific
+8,"Question: In radiation detection when using gas-filled detectors, there are five regions of the gas curve that describe the signal amplification versus the voltage applied to the detector. What are the 5 regions of that gas curve?  Answer: Recombination, ion chamber, proportional, Geiger-Muller, continuous discharge",Medium,Short QA,Multiple Correct,General
+9,"Question: Which radioactive decays conserve the mass number of an isotope?  Answer: Beta, gamma, positron",Hard,Short QA,Multiple Correct,Scientific
+10,"Question: Which isotopes have been used to create atomic clocks?  Answer: Cesium-133, hydrogen-1, rubidium-87",Hard,Short QA,Multiple Correct,Scientific
+11,"Question: Which two isotopes are used in the majority of all neutron generators that are commercially available?  Answer: Deuterium, Tritium",Medium,Short QA,Multiple Correct,Scientific
+12,Question: What fundamental particle of an atom is positively charged?  Answer: Proton,Easy,Short QA,Single Correct,Scientific
+13,Question: How many neutrons are inside a U-238 atom?  Answer: 146,Easy,Short QA,Single Correct,Numerical
+14,Question: How many neutrons and protons make up an alpha particle?  Answer:  2 protons 2 neutrons,Easy,Short QA,Multiple Correct,Num + Sci
+15,Question: What is the chemical symbol for Tungsten?  Answer: W,Easy,Short QA,Single Correct,General
+16,Question: Which photon interaction type does not end with the photon being absorbed?  Answer: Compton scattering,Easy,Short QA,Single Correct,General
+17,Question: What is the product isotope when Fe-56 absorbs a neutron and emits a proton?  Answer: Mn-56,Easy,Short QA,Single Correct,Scientific
+18,Question: What force do you need to initially overcome for a fusion reaction to occur?  Answer: The Coulomb barrier,Easy,Short QA,Single Correct,General
+19,Question: What is the mass of an electron?  Answer: 9.109 e -31 kg,Easy,Short QA,Single Correct,Numerical
+20,Question: What term is used to describe the probability of interaction between two particles?  Answer: Microscopic cross section,Easy,Short QA,Single Correct,General
+21,Question: How many joules are in one electron volt?  Answer: 1.6022e-19 J,Easy,Short QA,Single Correct,Numerical
+22,Question: What is the weakest fundamental force?  Answer: gravitational,Easy,Short QA,Single Correct,General
+23,Question: What is the heaviest stable isotope?  Answer: Pb-208,Easy,Short QA,Single Correct,Scientific
+24,Question: What isotope is most commonly used for radioactive dating?  Answer: Carbon-14,Easy,Short QA,Single Correct,Scientific
+25,Question: Which positively charged particle is emitted after a pair production interaction?  Answer: Positron,Easy,Short QA,Single Correct,Scientific
+26,Question: What is the cutoff energy for a thermal neutron?  Answer: 0.025 eV,Easy,Short QA,Single Correct,Num + Sci
+27,Question: What is the name of atoms that have the same atomic number but a different mass number?  Answer: Isotopes,Easy,Short QA,Single Correct,General
+28,"Question: What is the name of atoms that have the same mass number, but different atomic numbers?  Answer: Isobar",Easy,Short QA,Single Correct,General
+29,Question: How much U-235 is in a uranium nugget to consider it highly enriched?  Answer: Greater than 20%,Medium,Short QA,Single Correct,Numerical
+30,Question: What role does water play inside a nuclear reactor?  Answer: Neutron moderation and shielding,Medium,Short QA,Multiple Correct,General
+31,"Question: What is the difference between the fuel type for a pressurized water reactor and a molten salt reactor?  Answer: Pressurized water reactors must have enriched Uranium as most interactions will occur in the thermal neutron region. Molten salt does not qualify as a moderator, therefore most of the reactions will occur in the fast neutron region. Non or low-enriched Uranium is used for molten salt reactors.",Medium,Open QA,Multiple Correct,General
+32,Question: Why are poison rods included in some nuclear reactor designs?  Answer: To further control the criticality of the reaction.,Medium,Short QA,Single Correct,General
+33,Question: What element is most commonly used as a poison in PWR designs?  Answer: Boron,Medium,Short QA,Single Correct,Scientific
+34,"Question: Describe the Q-value of a nuclear reaction.  Answer: The amount of energy expelled or needed to make the reaction happen. If the value is negative, reaction is endothermic. If the value is positive, reaction is exothermic.",Medium,Open QA,Single Correct,General
+35,Question: What happens inside the nucleus of an atom during beta decay?  Answer: A neutron becomes a proton,Medium,Short QA,Single Correct,General
+36,"Question: In radiation detection when using gas-filled detectors, there are five regions of the gas curve that describe the signal amplification versus the voltage applied to the detector. Which region of the gas curve cannot be used for radiation detection?  Answer: Continuous discharge",Medium,Short QA,Single Correct,General
+37,Question: What is the difference between phosphorescence and fluorescence?   Answer: Fluorescence is the immediate emission of photons during an interaction. Phosphorescence is the delayed emission of photons during an interaction.,Medium,Open QA,Multiple Correct,General
+38,Question: Prompt gamma-ray activation analysis is a measurement technique to determine the contents of a material. Does the material used for prompt gamma-ray analysis phosphoresce or fluoresce?  Answer: Fluoresce,Medium,Short QA,Single Correct,Scientific
+39,Question: Which element in a water molecule has the largest prompt gamma-ray from neutron activation?  Answer: Oxygen,Medium,Short QA,Single Correct,Scientific
+40,Question: Which radioactive decay process conserves the mass number of an isotope and emits a negatively charged particle?  Answer: Beta decay,Medium,Short QA,Single Correct,Scientific
+41,Question: What is the difference between fertile material and fissile material?  Answer: Fertile means it can be converted into a fissionable material through a neutron absorption. Fissile means the material is readily fissionable.,Medium,Open QA,Multiple Correct,General
+42,"Question: The atomic weight and atomic number of an isotope are A and Z, respectively. Using A and Z, how do you calculate the number of neutrons in an isotope?  Answer: A-Z",Medium,Short QA,Single Correct,Numerical
+43,Question: What is the job of a moderator inside a nuclear reactor?  Answer: To slow down neutrons,Medium,Short QA,Single Correct,General
+44,Question: Which isotope is used in the atomic clock that has been used to standardize the definition of one second?  Answer: Cesium-133,Medium,Short QA,Single Correct,Scientific
+45,"Question: If an Iron-56 isotope were to interact with a neutron and emit two neutron, what isotope is the product?  Answer: Iron-55",Medium,Short QA,Single Correct,Scientific
+46,"Question: If you were to remove poison rods from a nuclear reactor, what would happen to the criticality?  Answer: It would increase",Hard,Short QA,Single Correct,General
+47,Question: Why aren’t particle accelerators used to create chained fusion reactions?  Answer: Because the energy it costs to run the particle accelerators far exceeds the energy released during the fusion reaction,Hard,Open QA,Single Correct,General
+48,Question: How does a deuterium-tritium fusion neutron generator work?  Answer: Deuterium atoms get accelerated to approximately 100 keV into a stationary tritium target. The output is a 14.1 MeV neutron and a He-4 atom,Hard,Open QA,Multiple Correct,General
+49,Question: Why do scientists study surrogate reactions?  Answer: To obtain cross sections for nuclear reactions that involve difficult-to-produce targets.,Hard,Open QA,Single Correct,General
+50,Question: What is the probability that an Am-241 atom will decay in 30 days?  Answer: 0.000132 ,Hard,Short QA,Single Correct,Numerical
+51,"Question: Why is highly enriched uranium necessary for reactors that use water as a moderator?  Answer: Highly enriched uranium increases the U-235 content. U-235 has a high chance to fission when a thermal neutron is absorbed. Therefore, the more U-235 you have, the higher the probability that the neutron will be absorbed by U-235. Also, the total number of fissions that the fuel can undergo will increase.",Hard,Open QA,N/A,General
+52,Question: Why can’t a neutron be manipulated inside an electric field?  Answer: Because the neutron is not electrically charged,Hard,Short QA,Single Correct,General
+53,"Question: How does a scintillator used for radiation detection work?  Answer: The incident particle interacts with the scintillating material which causes a photon to be emitted. This photon will sometimes be directed toward a photomultiplier tube which absorbs the photon, emits an electron, and that electron creates a cascade of electrons which is detected by instrumentation.",Hard,Open QA,N/A,General
+54,"Question: What are the advantages of using nuclear breeder reactors?  Answer: Nuclear waste can be recycled to create Pu-239 for future reactor use, more heat is generated per unit fuel, creates more fuel than it uses,",Hard,Open QA,N/A,General
+55,Question: Why are light water reactors the most common type of nuclear reactor?  Answer: Because water is common on the surface of the earth.,Hard,Short QA,Single Correct,General
+56,Question: How many Uranium-235 atoms per cubic centimeter are there in natural uranium?  Answer: 3.46e+20 atoms/cc,Hard,Short QA,Single Correct,Num + Sci
+57,"Question: Why can a nuclear reactor that uses heavy-water as a moderator use a lower enrichment uranium?  Answer: Because the heat capacity of heavy water is greater than that of light water. Therefore, more heat can be absorbed by the core. This means less fissions are needed to create heat.",Hard,Open QA,N/A,General
+58,"Question: What makes germanium a great photon detector?  Answer:  The band gaps in a germanium crystalline structure are extremely small which makes the resolution of a germanium detector excel compared to other detectors. However, this also means that leakage current can be an issue if the crystal is not cooled properly during use.",Hard,Open QA,N/A,General
+59,"Question: Why can’t Geiger-Muller counters be used for spectral analysis?  Answer: The electric field near the anode wire is so strong that the gas multiplication factor is extremely high. This means that when an event happens, so many electrons are created during a successful avalanche that the electronics can’t tell the difference between particles.",Hard,Open QA,N/A,General
+60,"Question: If a material has a half life of 100 years, how much original material is left after 400 years?  Answer: 1/8",Hard,Short QA,Single Correct,Numerical
+61,"Question: Describe the fuel in a homogeneous reactor.  Answer: The fuel and the moderator are mixed together to form a single, homogeneous material.",Hard,Open QA,Single Correct,General
+62,Question: How do cosmic neutrons end up in Earth’s atmosphere?  Answer: Cosmic protons interact with Earth’s magnetic field and neutrons are emitted.,Hard,Open QA,Single Correct,General
+63,Question: What happens when an electron and positron interact with each other?  Answer: They annihilate and two 511 keV photons are emitted.,Hard,Short QA,Single Correct,General
+64,Question: Why is it hard to measure the energy spectrum of cosmic rays?  Answer: Because they have such high energies that they only deposit partial energy into a radiation detection medium.,Hard,Open QA,Single Correct,General
+65,Question: Why can’t a fusion reactor be used to power a car?  Answer: There would be inadequate amount of shielding between the driver and the core. Cooling the core in a car would be an issue. A car wreck could happen that would cause the core to be exposed.,Hard,Open QA,Multiple Correct,General
+66,Question: What does Avogadro's number explain? Answer: The number of atoms in 1 mole of a substance,Medium,Open QA,Single Correct,Scientific
+67,Question: What is the atomic number density of U-235 in natural uranium? Answer: 3.51 x10^20 atoms/cm3,Hard,Short QA,Single Correct,Numerical
+68,Question: Imagine that you acquire a Cs-137 sample at time t=0 seconds. What is the percentage of atoms that have not decayed after 100 days? Answer: 99.37%,Hard,Short QA,Single Correct,Numerical
+69,Question: Which type of reactor does not use a moderator? Answer: Fast neutron reactors,Medium,Short QA,Single Correct,Scientific
+70,Question: Why can't neutrons be manipulated inside an electric or magnetic field? Answer: Because neutrons have no charge,Medium,Open QA,Single Correct,General
+71,"Question: If neutrons cannot be manipulated, how are neutron beams created? Answer: Neutrons are created by spallation reactions or charged particle reactions and are then collimated to create a beam.",Hard,Open QA,Multiple Correct,Scientific
+72,Question: What is the fundamental charge of an electron? Answer: -1.602 x 10^-19 C,Easy,Short QA,Single Correct,Num + Sci
+73,Question: What is the half-life of Carbon-14? Answer: 5700 years,Easy,Short QA,Single Correct,Num + Sci
+74,Question: What is the most accurate way to determine the composition of a material? Answer: Accelerator mass spectrometry,Medium,Short QA,Single Correct,Scientific
+75,Question: What is the molecular weight of a heavy water? Answer: 20 g/mol,Hard,Short QA,Single Correct,Num + Sci
+76,"Question: If you're standing 2 feet away from a radioactive source, how much further must from the radioactive source must you move in order to reduce the induced dose by 1/4? Answer: 2 feet",Medium,Short QA,Single Correct,Num + Sci
+77,Question: What is the minimum energy a photon must have to undergo pair production? Answer: 1.022 MeV,Easy,Short QA,Single Correct,Num + Sci
+78,"Question: If the cross section of a 1 MeV neutron in a piece of pure iron is 0.88 barns, what is the mean free path length of that neutron? Answer: 13.38 cm",Hard,Short QA,Single Correct,Num + Sci
+79,"Question: How many protons, neutrons, and electrons does a calcium-40 isotope have if its charge state is 2+? Answer: 20 protons, 20 neutrons, 18 electrons",Medium,Short QA,Multiple Correct,Num + Sci
+80,Question: How many valence electrons does a noble gas have? Answer: None,Easy,Short QA,Single Correct,Numerical
+81,Question: What is the mass of a proton? Answer: 1.67 × 10-27 kilograms,Easy,Short QA,Single Correct,Num + Sci
+82,Question: What is the percentage of heavy water in normal water? Answer: 0.017 ,Easy,Short QA,Single Correct,Numerical
+83,"Question: If an atom contains 35 protons, how many electrons does it need to have a neutral charge? Answer: 35 electrons",Easy,Short QA,Single Correct,Numerical
+84,"Question: You have a 1 gram iron foil and stick it in a monoenergetic neutron beam whose flux is 3e8 neutrons/cm2/s. If the iron-56 cross section of the desired reaction is 1.5 barns, how many iron-56 neutron interactions do you expect per second? Answer: 4.45x10^6 per second",Hard,Short QA,Single Correct,Numerical
+85,"Question: Why isn't the EXFOR nuclear library more complete? Answer: Some reactions are difficult/impossible to measure due to short-lived targets, small cross sections in various energy ranges, the difficulties in creating high flux, low energy neutrons",Hard,Open QA,N/A,Scientific
+86,"Question: How are neutrons created in facilities that are not reactors? Answer: Spallation reactions, charged particle reactions with small Z targets",Hard,Open QA,Multiple Correct,Scientific
+87,Question: What is the neutron separation energy of Iron-56? Answer: 10.67 MeV,Medium,Short QA,Single Correct,Num + Sci
+88,"Question: If the total neutron cross section of a material is 15 barns and the elastic scattering cross section is 13.5 barns, what is the nonelastic cross section? Answer: 1.5 barns",Hard,Short QA,Single Correct,Num + Sci
+89,"Question: If the radioactive decay constant is equivalent to the natural log of 2 divided by the half life, what is the radioactive decay constant of Iron-55? Answer: 0.2526 1/year ",Hard,Short QA,Single Correct,Num + Sci
+90,"Question: If the total neutron macroscopic cross section of a material is 0.05 1/cm, what is the mean free path length? Answer: 20 cm",Hard,Short QA,Single Correct,Num + Sci
+91,"Question: If the mean free path length of a neutron inside a material is 5 cm, what is its macroscopic cross section? Answer: 0.2 1/cm",Easy,Short QA,Single Correct,Num + Sci
+92,"Question: What is the total absorption cross section of a material if the total cross section is 19 barns, the elastic scattering cross section is 10 barns, and the inelastic scattering cross section is 2 barns. Answer: 5 barns",Hard,Short QA,Single Correct,Num + Sci
+93,"Question: If an iron-54 atom absorbed a neutron, how many neutrons will it have? Answer: 29",Hard,Short QA,Single Correct,Numerical
+94,"Question: If a chromium-52 atom undergoes an (n,alpha) reaction, how many protons and neutrons will it have? Answer: 22 protons, 27 neutrons",Hard,Short QA,Multiple Correct,Num + Sci
+95,Question: What is room temperature in Kelvin? Answer: 293.15 K,Easy,Short QA,Single Correct,Num + Sci
+96,"Question: Why is heavy water deemed ""heavy""? Answer: The hydrogen atoms are actually deuterium and have an extra neutron.",Medium,Open QA,Single Correct,Scientific
+97,"Question: What is the energy of the photon, in MeV, of the prompt gamma ray released during neutron interaction of hydrogen? Answer: 2.3",Medium,Short QA,Single Correct,Numerical
+98,"Question: What is the signature gamma ray energy, in keV, of the photon created during the (n,alpha) reaction with boron-10? Answer: 478",Medium,Short QA,Single Correct,Numerical
+99,Question: Why is sodium so reactive with water? Answer: Sodium has a single valence electron. That valence electron wants to bond with the free hydrogen ions that exist in water.,Medium,Open QA,Single Correct,Scientific
+100,Question: What is the velocity of a thermal neutron in m/s? Answer: 2200,Easy,Open QA,Single Correct,Numerical
