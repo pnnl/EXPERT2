@@ -30,7 +30,7 @@ multidict==6.0.4
 multimethod==1.9.1
 multiprocess==0.70.14
 networkx==3.0
-nltk==3.8.1
+nltk==3.10.3
 numpy==1.23.5
 pandas==1.5.3
 pandas-profiling==3.6.6
