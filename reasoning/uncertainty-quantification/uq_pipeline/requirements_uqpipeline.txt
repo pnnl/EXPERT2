@@ -53,7 +53,7 @@ statsmodels==0.13.5
 sympy==1.11.1
 tangled-up-in-unicode==0.2.0
 tokenizers==0.13.2
-torch==2.0.0+cpu
+torch==2.13.0
 torchaudio==2.0.1+cpu
 torchvision==0.15.1+cpu
 tqdm==4.64.1
