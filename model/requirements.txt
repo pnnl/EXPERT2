@@ -24,7 +24,7 @@ six==1.16.0
 tokenizers==0.12.1
 torch==1.11.0
 tqdm==4.65.0
-transformers==4.18.0
+transformers==5.10.1
 typing_extensions==4.4.0
 urllib3==1.26.15
 wget==3.2
