@@ -1,5 +1,9 @@
 # EXPERT 2.0 Human-AI Reasoning Engine
 
+> [!CAUTION]
+> **ARCHIVED — USE AT YOUR OWN RISK**
+> This repository is archived and no longer maintained. It receives no bug fixes, security patches, or support. Use this code at your own risk.
+
 [EXPERT 2.0](https://pnnl.gov/expert) develops novel AI foundation models to enable multi-hop reasoning over the scientific documents for generating human-interpretable evidence and uncertainty estimates.
 
 <img src="./reasoning/evidence-generation/img/img4.jpeg"></img>
