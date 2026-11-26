@@ -19,7 +19,7 @@ regex==2022.10.31
 requests==2.28.2
 rouge==1.0.1
 sacremoses==0.0.53
-setuptools==65.6.3
+setuptools==84.1.0
 six==1.16.0
 tokenizers==0.12.1
 torch==1.11.0
