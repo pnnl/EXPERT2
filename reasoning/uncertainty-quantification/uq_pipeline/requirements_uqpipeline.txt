@@ -57,7 +57,7 @@ torch==2.0.0+cpu
 torchaudio==2.0.1+cpu
 torchvision==0.15.1+cpu
 tqdm==4.64.1
-transformers==4.27.2
+transformers==5.10.1
 typeguard==2.13.3
 typing_extensions==4.4.0
 urllib3==1.26.13
