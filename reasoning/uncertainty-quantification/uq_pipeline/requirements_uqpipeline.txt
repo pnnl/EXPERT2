@@ -19,7 +19,7 @@ huggingface-hub==0.13.3
 idna==3.4
 ImageHash==4.3.1
 ipywidgets==8.0.5
-Jinja2==3.1.2
+Jinja2==3.1.6
 joblib==1.2.0
 jupyterlab-widgets==3.0.6
 kiwisolver==1.4.4
